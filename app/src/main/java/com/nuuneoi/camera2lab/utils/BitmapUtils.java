@@ -14,40 +14,7 @@ import android.renderscript.Type;
 import java.nio.ByteBuffer;
 
 public class BitmapUtils {
-    /*
-        Bitmap yuv420ToBitmap(Image image, Context context) {
-            RenderScript rs = RenderScript.create(context);
-            ScriptIntrinsicYuvToRGB script = ScriptIntrinsicYuvToRGB.create(
-                    rs, Element.U8_4(rs));
-
-            // Refer the logic in a section below on how to convert a YUV_420_888 image
-            // to single channel flat 1D array. For sake of this example I'll abstract it
-            // as a method.
-            byte[] yuvByteArray = yuv420ToByteArray(image);
-
-            Type.Builder yuvType = new Type.Builder(rs, Element.U8(rs))
-                    .setX(yuvByteArray.length);
-            Allocation in = Allocation.createTyped(
-                    rs, yuvType.create(), Allocation.USAGE_SCRIPT);
-
-            Type.Builder rgbaType = new Type.Builder(rs, Element.RGBA_8888(rs))
-                    .setX(image.getWidth())
-                    .setY(image.getHeight());
-            Allocation out = Allocation.createTyped(
-                    rs, rgbaType.create(), Allocation.USAGE_SCRIPT);
-
-            // The allocations above "should" be cached if you are going to perform
-            // repeated conversion of YUV_420_888 to Bitmap.
-            in.copyFrom(yuvByteArray);
-            script.setInput(in);
-            script.forEach(out);
-
-            Bitmap bitmap = Bitmap.createBitmap(
-                    image.getWidth(), image.getHeight(), Bitmap.Config.ARGB_8888);
-            out.copyTo(bitmap);
-            return bitmap;
-        }
-    */
+    
     public static YuvImage toYuvImage(Image image) {
         if (image.getFormat() != ImageFormat.YUV_420_888) {
             throw new IllegalArgumentException("Invalid image format");
