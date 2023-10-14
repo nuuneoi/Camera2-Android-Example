@@ -14,7 +14,7 @@ import android.renderscript.Type;
 import java.nio.ByteBuffer;
 
 public class BitmapUtils {
-    
+
     public static YuvImage toYuvImage(Image image) {
         if (image.getFormat() != ImageFormat.YUV_420_888) {
             throw new IllegalArgumentException("Invalid image format");

@@ -56,6 +56,7 @@ public class MainActivity extends AppCompatActivity {
 
         initInstances();
         initCamera();
+        initFpsUpdater();
     }
 
     private void initInstances() {
@@ -76,7 +77,9 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View view) {
             }
         });
+    }
 
+    private void initFpsUpdater() {
         Timer fpsUpdaterTimer = new Timer();
         fpsUpdaterTimer.scheduleAtFixedRate(new TimerTask() {
             @Override
