@@ -57,7 +57,7 @@ public class Camera2ApiManager {
 
     private boolean isCameraStarted;
 
-    private final int FPS_TIMESTAMP_INTERVAL_MS = 3000;
+    private final int FPS_TIMESTAMP_INTERVAL_MS = 1000;
 
     private ArrayList<Long> mFpsTimestampCounter = new ArrayList<>();
 
