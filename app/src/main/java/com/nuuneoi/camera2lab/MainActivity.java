@@ -32,6 +32,9 @@ import java.util.TimerTask;
 
 public class MainActivity extends AppCompatActivity {
 
+    private final int CAMERA_WIDTH = 1280;
+    private final int CAMERA_HEIGHT = 720;
+
     private Camera2ApiManager mCamera2ApiManager;
 
     private TextureView mPreviewTextureView;
@@ -96,6 +99,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void initCamera() {
         mCamera2ApiManager = new Camera2ApiManager(this);
+        mCamera2ApiManager.setPreviewDimension(CAMERA_WIDTH, CAMERA_HEIGHT);
         // Comment the next line if you want to hide the preview
         mCamera2ApiManager.setPreviewTextureView(mPreviewTextureView);
         // Comment the next line if you don't want to get the preview frame
@@ -183,7 +187,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        mMediaEncoder = new CustomMediaEncoder(1280, 720);
+        mMediaEncoder = new CustomMediaEncoder(CAMERA_WIDTH, CAMERA_HEIGHT);
         mMediaEncoder.start();
     }
 
