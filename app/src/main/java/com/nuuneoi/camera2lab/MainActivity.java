@@ -99,7 +99,7 @@ public class MainActivity extends AppCompatActivity {
         // Comment the next line if you want to hide the preview
         mCamera2ApiManager.setPreviewTextureView(mPreviewTextureView);
         // Comment the next line if you don't want to get the preview frame
-//        mCamera2ApiManager.setOnImageAvailableListener(onImageAvailableListener);
+        mCamera2ApiManager.setOnImageAvailableListener(onImageAvailableListener);
     }
 
     ImageReader.OnImageAvailableListener onImageAvailableListener = new ImageReader.OnImageAvailableListener() {
