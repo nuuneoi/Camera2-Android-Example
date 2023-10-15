@@ -66,6 +66,7 @@ public class Camera2ApiManager {
     private int mImageReaderImageFormat = ImageFormat.YUV_420_888;
 
     private ImageReader.OnImageAvailableListener mImageAvailableListener;
+    private Surface mMediaCodecSurface;
 
     public Camera2ApiManager(Context context) {
         mContext = context;
@@ -92,6 +93,14 @@ public class Camera2ApiManager {
         }
 
         mImageAvailableListener = listener;
+    }
+
+    public void setMediaCodecSurface(Surface mediaCodecSurface) {
+        if (isCameraStarted) {
+            throw new RuntimeException("Cannot set MediaCodec Surface once the camera has started");
+        }
+
+        mMediaCodecSurface = mediaCodecSurface;
     }
 
     public boolean hasOnImageAvailableListener() {
@@ -153,7 +162,7 @@ public class Camera2ApiManager {
                 Size[] previewSize = cameraCharacteristics.get(CameraCharacteristics.SCALER_STREAM_CONFIGURATION_MAP).getOutputSizes(ImageFormat.JPEG);
                 Log.d(TAG, Arrays.toString(previewSize));
 
-                mCameraManager.openCamera(id, stateCallback, null);
+                mCameraManager.openCamera(id, stateCallback, mBackgroundHandler);
                 break;
             }
         } catch (CameraAccessException e) {
@@ -192,9 +201,12 @@ public class Camera2ApiManager {
             }
 
             mImageReader = ImageReader.newInstance(mPreviewWidth, mPreviewHeight, mImageReaderImageFormat, 2);
-            List<Surface> outputSurfaces = new ArrayList<Surface>(2);
+            List<Surface> outputSurfaces = new ArrayList<Surface>(3);
             if (mImageAvailableListener != null)
                 outputSurfaces.add(mImageReader.getSurface());
+
+            if (mMediaCodecSurface != null)
+                outputSurfaces.add(mMediaCodecSurface);
 
             Surface previewSurface = null;
             if (mPreviewTextureView != null) {
@@ -209,6 +221,8 @@ public class Camera2ApiManager {
                 mCaptureRequestBuilder.addTarget(previewSurface);
             if (mImageAvailableListener != null)
                 mCaptureRequestBuilder.addTarget(mImageReader.getSurface());
+            if (mMediaCodecSurface != null)
+                mCaptureRequestBuilder.addTarget(mMediaCodecSurface);
 
             if (mPreviewTextureView != null) {
                 WindowManager windowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);

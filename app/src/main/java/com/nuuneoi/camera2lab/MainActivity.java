@@ -6,29 +6,27 @@ import androidx.core.app.ActivityCompat;
 import android.Manifest;
 
 import android.content.pm.PackageManager;
-import android.graphics.Bitmap;
-import android.graphics.BitmapFactory;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.media.Image;
 import android.media.ImageReader;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
 import android.util.Log;
+import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import com.nuuneoi.camera2lab.encoder.MediaEncoder;
 import com.nuuneoi.camera2lab.manager.Camera2ApiManager;
 import com.nuuneoi.camera2lab.utils.BitmapUtils;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -49,13 +47,14 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean isPictureTakingRequested = false;
 
+    private MediaEncoder mMediaEncoder;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
         initInstances();
-        initCamera();
         initFpsUpdater();
     }
 
@@ -100,15 +99,16 @@ public class MainActivity extends AppCompatActivity {
         // Comment the next line if you want to hide the preview
         mCamera2ApiManager.setPreviewTextureView(mPreviewTextureView);
         // Comment the next line if you don't want to get the preview frame
-        mCamera2ApiManager.setOnImageAvailableListener(onImageAvailableListener);
+//        mCamera2ApiManager.setOnImageAvailableListener(onImageAvailableListener);
     }
 
     ImageReader.OnImageAvailableListener onImageAvailableListener = new ImageReader.OnImageAvailableListener() {
         @Override
         public void onImageAvailable(ImageReader imageReader) {
+            Image image = null;
+
             // Drop frame if the previous frame is still being processed
             if (isProcessingImage) {
-                Image image = null;
                 try {
                     image = imageReader.acquireLatestImage();
                 } finally {
@@ -122,7 +122,6 @@ public class MainActivity extends AppCompatActivity {
             isProcessingImage = true;
 
             // Process Image
-            Image image = null;
             try {
                 image = imageReader.acquireLatestImage();
 
@@ -184,17 +183,59 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
 
-        if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED
-                && ActivityCompat.checkSelfPermission(this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
-            return;
-        }
-        mCamera2ApiManager.startCamera();
+        mMediaEncoder = new CustomMediaEncoder(1280, 720);
+        mMediaEncoder.start();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
-        mCamera2ApiManager.stopCamera();
+
+        if (mCamera2ApiManager != null)
+            mCamera2ApiManager.stopCamera();
+        if (mMediaEncoder != null)
+            mMediaEncoder.stop();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+    }
+
+    class CustomMediaEncoder extends MediaEncoder {
+
+        private static final String TAG = "CustomMediaEncoder";
+
+        public CustomMediaEncoder(int width, int height) {
+            super(width, height);
+        }
+
+        @Override
+        protected void onSurfaceCreated(Surface surface) {
+            super.onSurfaceCreated(surface);
+            Log.d(TAG, "onSurfaceCreated");
+
+            // Start Camera
+            initCamera();
+            mCamera2ApiManager.setMediaCodecSurface(surface);
+
+            if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED
+                    && ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
+                return;
+            }
+            mCamera2ApiManager.startCamera();
+        }
+
+        @Override
+        protected void onSurfaceDestroyed(Surface surface) {
+            super.onSurfaceDestroyed(surface);
+            Log.d(TAG, "onSurfaceDestroyed");
+        }
     }
 }
