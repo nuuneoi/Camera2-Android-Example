@@ -37,6 +37,7 @@
                 android:id="@+id/btnTakePicture"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginLeft="16dp"
                 android:layout_marginRight="16dp"
                 android:text="Take Picture" />
 
@@ -44,7 +45,15 @@
                 android:id="@+id/btnTakeVideo"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
+                android:layout_marginRight="16dp"
                 android:text="Take Video" />
+
+            <Button
+                android:id="@+id/btnStopVideoRecording"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:visibility="gone"
+                android:text="Stop" />
 
         </LinearLayout>
     </RelativeLayout>

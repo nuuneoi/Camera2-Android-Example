@@ -5,6 +5,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
 import android.Manifest;
 
+import android.annotation.SuppressLint;
 import android.content.pm.PackageManager;
 import android.graphics.Rect;
 import android.graphics.YuvImage;
@@ -41,6 +42,7 @@ public class MainActivity extends AppCompatActivity {
 
     private Button btnTakePicture;
     private Button btnTakeVideo;
+    private Button btnStopVideoRecording;
 
     private TextView tvFps;
 
@@ -58,6 +60,7 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         initInstances();
+        initCamera();
         initFpsUpdater();
     }
 
@@ -73,10 +76,26 @@ public class MainActivity extends AppCompatActivity {
                 takePicture();
             }
         });
+
         btnTakeVideo = (Button) findViewById(R.id.btnTakeVideo);
         btnTakeVideo.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
+                btnTakePicture.setVisibility(View.GONE);
+                btnTakeVideo.setVisibility(View.GONE);
+                btnStopVideoRecording.setVisibility(View.VISIBLE);
+                startRecording();
+            }
+        });
+
+        btnStopVideoRecording = (Button) findViewById(R.id.btnStopVideoRecording);
+        btnStopVideoRecording.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                btnTakePicture.setVisibility(View.VISIBLE);
+                btnTakeVideo.setVisibility(View.VISIBLE);
+                btnStopVideoRecording.setVisibility(View.GONE);
+                stopRecording();
             }
         });
     }
@@ -171,6 +190,24 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void startRecording() {
+        mMediaEncoder = new CustomMediaEncoder(CAMERA_WIDTH, CAMERA_HEIGHT);
+        mMediaEncoder.start();
+    }
+
+    private void stopRecording() {
+        if (mCamera2ApiManager != null) {
+            mCamera2ApiManager.stopCamera();
+            mCamera2ApiManager.setMediaCodecSurface(null);
+            startCamera();
+        }
+
+        if (mMediaEncoder != null) {
+            mMediaEncoder.stop();
+            mMediaEncoder = null;
+        }
+    }
+
     @Override
     public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
@@ -183,33 +220,31 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
+    private void startCamera() {
+        if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED
+                && ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
+            return;
+        }
+        mCamera2ApiManager.startCamera();
+    }
+
     @Override
     protected void onResume() {
         super.onResume();
 
-        mMediaEncoder = new CustomMediaEncoder(CAMERA_WIDTH, CAMERA_HEIGHT);
-        mMediaEncoder.start();
+        startCamera();
     }
 
     @Override
     protected void onPause() {
         super.onPause();
 
+        stopRecording();
         if (mCamera2ApiManager != null)
             mCamera2ApiManager.stopCamera();
-        if (mMediaEncoder != null)
-            mMediaEncoder.stop();
     }
 
-    @Override
-    protected void onStart() {
-        super.onStart();
-    }
-
-    @Override
-    protected void onStop() {
-        super.onStop();
-    }
 
     class CustomMediaEncoder extends MediaEncoder {
 
@@ -225,15 +260,9 @@ public class MainActivity extends AppCompatActivity {
             Log.d(TAG, "onSurfaceCreated");
 
             // Start Camera
-            initCamera();
+            mCamera2ApiManager.stopCamera();
             mCamera2ApiManager.setMediaCodecSurface(surface);
-
-            if (ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.CAMERA) != PackageManager.PERMISSION_GRANTED
-                    && ActivityCompat.checkSelfPermission(MainActivity.this, Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
-                return;
-            }
-            mCamera2ApiManager.startCamera();
+            startCamera();
         }
 
         @Override
