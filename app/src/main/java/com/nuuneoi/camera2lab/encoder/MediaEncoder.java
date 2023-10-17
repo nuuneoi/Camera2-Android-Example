@@ -103,7 +103,7 @@ public class MediaEncoder {
 
         public Worker() {
             mBufferInfo = new MediaCodec.BufferInfo();
-            mTimeoutUsec = 10000l;
+            mTimeoutUsec = 30000l;
             mOutputPath = getCaptureFile(Environment.DIRECTORY_MOVIES, ".mp4").toString();
         }
 
