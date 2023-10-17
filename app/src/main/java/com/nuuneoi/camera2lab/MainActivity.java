@@ -21,7 +21,6 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-import com.nuuneoi.camera2lab.encoder.MediaEncoder;
 import com.nuuneoi.camera2lab.manager.Camera2ApiManager;
 import com.nuuneoi.camera2lab.utils.BitmapUtils;
 
