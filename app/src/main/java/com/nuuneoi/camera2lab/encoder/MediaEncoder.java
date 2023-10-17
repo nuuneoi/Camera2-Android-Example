@@ -18,6 +18,10 @@ import java.util.Locale;
 
 public class MediaEncoder {
 
+    public interface OnFrameAvailableListener {
+        void onFrameAvailable();
+    }
+
     private static final String TAG = "MediaEncoder";
     private static final String DIR_NAME = "CameraRecorder";
 
@@ -32,10 +36,16 @@ public class MediaEncoder {
     private int mWidth = 1280;
     private int mHeight = 720;
 
+    private OnFrameAvailableListener mOnFrameAvailableListener;
+
 
     public MediaEncoder(int width, int height) {
         mWidth = width;
         mHeight = height;
+    }
+
+    public void setOnFrameAvailable(OnFrameAvailableListener listener) {
+        mOnFrameAvailableListener = listener;
     }
 
     protected void onSurfaceCreated(Surface surface) {
@@ -146,6 +156,8 @@ public class MediaEncoder {
                         mMediaMuxer.start();
                     }
                 } else if (status >= 0) {
+                    if (mOnFrameAvailableListener != null)
+                        mOnFrameAvailableListener.onFrameAvailable();
                     // encoded sample
                     ByteBuffer data = mCodec.getOutputBuffer(status);
                     if (!mRecording) {

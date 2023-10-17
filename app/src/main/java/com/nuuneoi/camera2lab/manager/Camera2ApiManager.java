@@ -34,7 +34,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class Camera2ApiManager {
+public class Camera2ApiManager implements MediaEncoder.OnFrameAvailableListener {
     private final String TAG = "Camera2ApiManager";
 
     private Context mContext;
@@ -139,6 +139,7 @@ public class Camera2ApiManager {
         startBackgroundThread();
 
         mMediaEncoder = new CustomMediaEncoder(mPreviewWidth, mPreviewHeight);
+        mMediaEncoder.setOnFrameAvailable(Camera2ApiManager.this);
         if (recording)
             mMediaEncoder.startRecording();
         else
@@ -264,10 +265,6 @@ public class Camera2ApiManager {
             ImageReader.OnImageAvailableListener readerListener = new ImageReader.OnImageAvailableListener() {
                 @Override
                 public void onImageAvailable(ImageReader imageReader) {
-                    // Add Timestamp to FPS Calculator
-                    if (mPreviewTextureView == null)
-                        addFpsCurrentTimestamp();
-
                     // Call the ImageAvailableListener if set
                     if (mImageAvailableListener != null) {
                         mImageAvailableListener.onImageAvailable(imageReader);
@@ -363,7 +360,6 @@ public class Camera2ApiManager {
 
         @Override
         public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-            addFpsCurrentTimestamp();
         }
     };
 
@@ -387,6 +383,12 @@ public class Camera2ApiManager {
             mCameraDevice = null;
         }
     };
+
+    @Override
+    public void onFrameAvailable() {
+        // Add Timestamp to FPS Calculator
+        addFpsCurrentTimestamp();
+    }
 
     class CustomMediaEncoder extends MediaEncoder {
 
