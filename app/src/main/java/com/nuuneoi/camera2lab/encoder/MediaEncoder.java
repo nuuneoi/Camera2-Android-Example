@@ -32,6 +32,7 @@ public class MediaEncoder {
     private int mWidth = 1280;
     private int mHeight = 720;
 
+
     public MediaEncoder(int width, int height) {
         mWidth = width;
         mHeight = height;
@@ -49,8 +50,10 @@ public class MediaEncoder {
     }
 
     public synchronized void start() {
+        stop();
         if (mWorker == null) {
             mWorker = new Worker();
+            mWorker.setRecording(false);
             mWorker.setRunning(true);
             mWorker.start();
         }
@@ -58,11 +61,29 @@ public class MediaEncoder {
 
     public synchronized void stop() {
         if (mWorker != null) {
+            mWorker.setRecording(false);
             mWorker.setRunning(false);
             mWorker = null;
         }
     }
 
+    public synchronized void startRecording() {
+        stopRecording();
+        if (mWorker == null) {
+            mWorker = new Worker();
+            mWorker.setRecording(true);
+            mWorker.setRunning(true);
+            mWorker.start();
+        }
+    }
+
+    public synchronized void stopRecording() {
+        if (mWorker != null) {
+            mWorker.setRecording(false);
+            mWorker.setRunning(false);
+            mWorker = null;
+        }
+    }
 
     // Internal Thread
 
@@ -73,6 +94,8 @@ public class MediaEncoder {
         int mCodeTrackIndex;
         MediaMuxer mMediaMuxer;
         volatile boolean mRunning;
+
+        volatile boolean mRecording;
         Surface mSurface;
         final long mTimeoutUsec;
 
@@ -86,6 +109,10 @@ public class MediaEncoder {
 
         public void setRunning(boolean running) {
             mRunning = running;
+        }
+
+        public void setRecording(boolean recording) {
+            mRecording = recording;
         }
 
         @Override
@@ -107,14 +134,24 @@ public class MediaEncoder {
                 // if not running anymore, complete stream
                 mCodec.signalEndOfInputStream();
             }
+
             for (; ; ) {
                 int status = mCodec.dequeueOutputBuffer(mBufferInfo, mTimeoutUsec);
                 Log.d(TAG, "Encoding Status: " + status);
                 if (status == MediaCodec.INFO_TRY_AGAIN_LATER) {
                     if (!mRunning) break;
+                } else if (status == MediaCodec.INFO_OUTPUT_FORMAT_CHANGED) {
+                    if (mRecording) {
+                        mCodeTrackIndex = mMediaMuxer.addTrack(mCodec.getOutputFormat());
+                        mMediaMuxer.start();
+                    }
                 } else if (status >= 0) {
                     // encoded sample
                     ByteBuffer data = mCodec.getOutputBuffer(status);
+                    if (!mRecording) {
+                        mCodec.releaseOutputBuffer(status, false);
+                        continue;
+                    }
                     if (data != null) {
                         final int endOfStream = mBufferInfo.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM;
                         // pass to whoever listens to
@@ -134,12 +171,19 @@ public class MediaEncoder {
         }
 
         void release() {
+            if (mRecording) {
+                try {
+                    mMediaMuxer.stop();
+                } catch (Exception e) {
+
+                }
+            }
+
             // notify about destroying surface first before actually destroying it
             // otherwise unexpected exceptions can happen, since we working in multiple threads
             // simultaneously
             onSurfaceDestroyed(mSurface);
 
-            mMediaMuxer.stop();
             mCodec.stop();
             mCodec.release();
             mSurface.release();
@@ -155,7 +199,8 @@ public class MediaEncoder {
             format.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, VIDEO_I_FRAME_INTERVAL);
 
             try {
-                mMediaMuxer = new MediaMuxer(mOutputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
+                if (mRecording)
+                    mMediaMuxer = new MediaMuxer(mOutputPath, MediaMuxer.OutputFormat.MUXER_OUTPUT_MPEG_4);
                 mCodec = MediaCodec.createEncoderByType(VIDEO_FORMAT);
             } catch (IOException e) {
                 throw new RuntimeException(e);
@@ -165,9 +210,6 @@ public class MediaEncoder {
             mSurface = mCodec.createInputSurface();
             // notify codec to start watch surface and encode samples
             mCodec.start();
-
-            mCodeTrackIndex = mMediaMuxer.addTrack(mCodec.getOutputFormat());
-            mMediaMuxer.start();
 
             onSurfaceCreated(mSurface);
         }

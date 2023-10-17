@@ -27,6 +27,9 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 import androidx.annotation.RequiresPermission;
 
+import com.nuuneoi.camera2lab.MainActivity;
+import com.nuuneoi.camera2lab.encoder.MediaEncoder;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -67,6 +70,8 @@ public class Camera2ApiManager {
 
     private ImageReader.OnImageAvailableListener mImageAvailableListener;
     private Surface mMediaCodecSurface;
+
+    private MediaEncoder mMediaEncoder;
 
     public Camera2ApiManager(Context context) {
         mContext = context;
@@ -125,7 +130,7 @@ public class Camera2ApiManager {
     }
 
     @RequiresPermission(Manifest.permission.CAMERA)
-    public void startCamera() {
+    public void startCamera(boolean recording) {
         if (isCameraStarted)
             return;
 
@@ -133,16 +138,41 @@ public class Camera2ApiManager {
 
         startBackgroundThread();
 
-        if (mPreviewTextureView == null || mPreviewTextureView.isAvailable()) {
-            openCamera();
-        }
+        mMediaEncoder = new CustomMediaEncoder(mPreviewWidth, mPreviewHeight);
+        if (recording)
+            mMediaEncoder.startRecording();
+        else
+            mMediaEncoder.start();
     }
 
     public void stopCamera() {
+        if (mMediaEncoder != null) {
+            mMediaEncoder.stop();
+            mMediaEncoder = null;
+        }
+
         closeCamera();
         stopBackgroundThread();
 
         isCameraStarted = false;
+    }
+
+    @SuppressLint("MissingPermission")
+    public void startRecording() {
+        if (!isCameraStarted)
+            return;
+
+        stopCamera();
+        startCamera(true);
+    }
+
+    @SuppressLint("MissingPermission")
+    public void stopRecording() {
+        if (!isCameraStarted)
+            return;
+
+        stopCamera();
+        startCamera(false);
     }
 
     // Internal
@@ -216,7 +246,7 @@ public class Camera2ApiManager {
                 outputSurfaces.add(previewSurface);
             }
 
-            mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_PREVIEW);
+            mCaptureRequestBuilder = mCameraDevice.createCaptureRequest(CameraDevice.TEMPLATE_RECORD);
             if (mPreviewTextureView != null && previewSurface != null)
                 mCaptureRequestBuilder.addTarget(previewSurface);
             if (mImageAvailableListener != null)
@@ -357,4 +387,29 @@ public class Camera2ApiManager {
             mCameraDevice = null;
         }
     };
+
+    class CustomMediaEncoder extends MediaEncoder {
+
+        private static final String TAG = "CustomMediaEncoder";
+
+        public CustomMediaEncoder(int width, int height) {
+            super(width, height);
+        }
+
+        @SuppressLint("MissingPermission")
+        @Override
+        protected void onSurfaceCreated(Surface surface) {
+            super.onSurfaceCreated(surface);
+            Log.d(TAG, "onSurfaceCreated");
+
+            mMediaCodecSurface = surface;
+            openCamera();
+        }
+
+        @Override
+        protected void onSurfaceDestroyed(Surface surface) {
+            super.onSurfaceDestroyed(surface);
+            Log.d(TAG, "onSurfaceDestroyed");
+        }
+    }
 }

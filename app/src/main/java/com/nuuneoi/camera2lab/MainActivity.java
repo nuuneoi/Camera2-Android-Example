@@ -52,7 +52,6 @@ public class MainActivity extends AppCompatActivity {
 
     private boolean isPictureTakingRequested = false;
 
-    private MediaEncoder mMediaEncoder;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -120,9 +119,9 @@ public class MainActivity extends AppCompatActivity {
         mCamera2ApiManager = new Camera2ApiManager(this);
         mCamera2ApiManager.setPreviewDimension(CAMERA_WIDTH, CAMERA_HEIGHT);
         // Comment the next line if you want to hide the preview
-        mCamera2ApiManager.setPreviewTextureView(mPreviewTextureView);
+//        mCamera2ApiManager.setPreviewTextureView(mPreviewTextureView);
         // Comment the next line if you don't want to get the preview frame
-        mCamera2ApiManager.setOnImageAvailableListener(onImageAvailableListener);
+//        mCamera2ApiManager.setOnImageAvailableListener(onImageAvailableListener);
     }
 
     ImageReader.OnImageAvailableListener onImageAvailableListener = new ImageReader.OnImageAvailableListener() {
@@ -191,20 +190,14 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startRecording() {
-        mMediaEncoder = new CustomMediaEncoder(CAMERA_WIDTH, CAMERA_HEIGHT);
-        mMediaEncoder.start();
+        if (mCamera2ApiManager != null) {
+            mCamera2ApiManager.startRecording();
+        }
     }
 
     private void stopRecording() {
         if (mCamera2ApiManager != null) {
-            mCamera2ApiManager.stopCamera();
-            mCamera2ApiManager.setMediaCodecSurface(null);
-            startCamera();
-        }
-
-        if (mMediaEncoder != null) {
-            mMediaEncoder.stop();
-            mMediaEncoder = null;
+            mCamera2ApiManager.stopRecording();
         }
     }
 
@@ -226,7 +219,7 @@ public class MainActivity extends AppCompatActivity {
             ActivityCompat.requestPermissions(MainActivity.this, new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_CAMERA_PERMISSION);
             return;
         }
-        mCamera2ApiManager.startCamera();
+        mCamera2ApiManager.startCamera(false);
     }
 
     @Override
@@ -240,35 +233,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onPause() {
         super.onPause();
 
-        stopRecording();
         if (mCamera2ApiManager != null)
             mCamera2ApiManager.stopCamera();
-    }
-
-
-    class CustomMediaEncoder extends MediaEncoder {
-
-        private static final String TAG = "CustomMediaEncoder";
-
-        public CustomMediaEncoder(int width, int height) {
-            super(width, height);
-        }
-
-        @Override
-        protected void onSurfaceCreated(Surface surface) {
-            super.onSurfaceCreated(surface);
-            Log.d(TAG, "onSurfaceCreated");
-
-            // Start Camera
-            mCamera2ApiManager.stopCamera();
-            mCamera2ApiManager.setMediaCodecSurface(surface);
-            startCamera();
-        }
-
-        @Override
-        protected void onSurfaceDestroyed(Surface surface) {
-            super.onSurfaceDestroyed(surface);
-            Log.d(TAG, "onSurfaceDestroyed");
-        }
     }
 }
